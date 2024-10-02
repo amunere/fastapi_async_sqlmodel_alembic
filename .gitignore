@@ -145,5 +145,7 @@ cython_debug/
 # Migrations
 migrations/
 alembic.ini
+
+# Folders
 upload/
 email-templates/

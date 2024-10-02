@@ -1,7 +1,10 @@
+from typing import List, Optional
 import uuid
 from pydantic import EmailStr
 
+from sqlalchemy import ARRAY, Column, String
 from sqlmodel import Field, Relationship, SQLModel
+
 
 
 # Shared properties
@@ -41,9 +44,17 @@ class UpdatePassword(SQLModel):
 
 # Database model, database table inferred from class name
 class User(UserBase, table=True):
+    __tablename__ = "users"
+
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
-    posts: list["Post"] = Relationship(back_populates="owner", cascade_delete=True)
+    posts: list["Post"] = Relationship(back_populates="author", cascade_delete=True)
+    # categories: list["Category"] = Relationship(back_populates="author", cascade_delete=True)
+    image: str = None
+    role_id: uuid.UUID = Field(
+        foreign_key="user_role.id", nullable=False, ondelete="CASCADE"
+    )
+    role: list["UserRole"] | None = Relationship(back_populates="users")  
 
 
 # Properties to return via API, id is always required
@@ -93,20 +104,26 @@ class PostUpdate(PostBase):
 
 # Database model, database table inferred from class name
 class Post(PostBase, table=True):
+    __tablename__ = "posts"
+
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     title: str = Field(min_length=10, max_length=255, unique=True)
-    owner_id: uuid.UUID = Field(
+    description: str = Field(min_length=10, max_length=255)
+    content: str | None = Field(min_length=10, max_length=255)
+    author_id: uuid.UUID = Field(
         foreign_key="user.id", nullable=False, ondelete="CASCADE"
     )
-    owner: User | None = Relationship(back_populates="posts")    
+    author: User | None = Relationship(back_populates="posts")    
     slug: str
     images: list["Image"] = Relationship(back_populates="post", cascade_delete=True)
+    tags: List[str] = Field(default=None, sa_column=Column(ARRAY(String())))
+    # categories: 
     
 
 # Properties to return via API, id is always required
 class PostPublic(PostBase):
     id: uuid.UUID
-    owner_id: uuid.UUID
+    author_id: uuid.UUID
 
 
 class PostsPublic(SQLModel):
@@ -131,6 +148,8 @@ class ImageUpdate(ImageBase):
 
 # Database model, database table inferred from class name
 class Image(ImageBase, table=True):
+    __tablename__ = "post_images"
+
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)     
     post_id: uuid.UUID = Field(
         foreign_key="post.id", nullable=False, ondelete="CASCADE"
@@ -142,6 +161,56 @@ class Image(ImageBase, table=True):
 class ImagePublic(ImageBase):
     id: uuid.UUID    
 
+
 class ImagesPublic(SQLModel):
     data: list[ImagePublic]
     count: int
+
+
+# # Shared properties
+# class CategoryBase(SQLModel):
+#     title: str = Field(min_length=1, max_length=255, unique=True)  
+#     description: str | None = Field(default=None, max_length=255)
+    
+
+# # Properties to receive on category creation
+# class CategoryCreate(CategoryBase):
+#     pass
+
+# # Properties to receive on category update
+# class CategoryUpdate(CategoryBase):
+#     title: str | None = Field(default=None, min_length=1, max_length=255, unique=True)  # type: ignore
+
+
+# # Database model, database table inferred from class name
+# class Category(CategoryBase, table=True):
+#     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+#     title: str = Field(min_length=10, max_length=255, unique=True)
+#     description: str = Field(min_length=10, max_length=255)
+#     author_id: uuid.UUID = Field(
+#         foreign_key="user.id", nullable=False, ondelete="CASCADE"
+#     )
+#     author: User | None = Relationship(back_populates="categories")    
+#     slug: str
+
+#     # posts: list[Post] | None = Relationship(back_populates="categories")
+    
+
+# # Properties to return via API, id is always required
+# class CategoryPublic(CategoryBase):
+#     id: uuid.UUID
+#     author_id: uuid.UUID
+
+
+# class CategoriesPublic(SQLModel):
+#     data: list[CategoryPublic]
+#     count: int
+
+
+class UserRole(SQLModel, table=True):
+    __tablename__ = "user_roles"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    name: str
+
+    users: list[User] = Relationship(back_populates="role")

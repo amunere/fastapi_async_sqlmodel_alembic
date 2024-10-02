@@ -1,5 +1,4 @@
 import uuid
-from PIL import Image
 from typing import Any
 from fastapi import (
     BackgroundTasks, 
@@ -10,9 +9,20 @@ from fastapi import (
     UploadFile,
 )
 from sqlmodel import col, delete, func, select
-from app import crud
+from app.crud import user_crud as crud
 from app.core.config import settings
-from app import models
+from app.models.user_model import User
+from app.models.post_model import Post
+from app.schemas.user_schema import (
+    UserPublic, 
+    UserCreate, 
+    UserUpdateSelf,
+    UsersPublic, 
+    UpdatePassword,
+    UserUpdate
+)
+from app.schemas.common_schema import Message
+
 from app.core import security
 from app.api.deps import (
     SessionDep, 
@@ -27,8 +37,8 @@ from app.utils import (
 router = APIRouter()
 
 
-@router.post("/create", summary="Create new user", response_model=models.UserPublic)
-async def create_user(background_tasks: BackgroundTasks, user_in: models.UserCreate, session: SessionDep) -> Any:
+@router.post("/create", summary="Create new user", response_model=UserPublic)
+async def create_user(background_tasks: BackgroundTasks, user_in: UserCreate, session: SessionDep) -> Any:
     """
     Create new user.
     """
@@ -49,8 +59,11 @@ async def create_user(background_tasks: BackgroundTasks, user_in: models.UserCre
     return user
 
 
-@router.patch("/me", summary="Update user", response_model=models.UserPublic)
-async def update_user(*, session: SessionDep, user_in: models.UserUpdateMe, current_user: CurrentUser):      
+@router.patch("/me", summary="Update user", response_model=UserPublic)
+async def update_user(*, session: SessionDep, user_in: UserUpdateSelf, current_user: CurrentUser) -> Any: 
+    """
+    Update own user.
+    """     
     if user_in.email:
         existing_user = await crud.get_user_by_email(session=session, email=user_in.email)
         if existing_user and existing_user.id != current_user.id:
@@ -73,26 +86,26 @@ async def get_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any
     Get all users.
     """
 
-    count_statement = select(func.count()).select_from(models.User)
+    count_statement = select(func.count()).select_from(User)
     count = await session.scalar(count_statement)
 
-    statement = select(models.User).offset(skip).limit(limit)
+    statement = select(User).offset(skip).limit(limit)
     users = await session.exec(statement)
 
-    return models.UsersPublic(data=users, count=count)
+    return UsersPublic(data=users, count=count)
 
 
-@router.get("/me", response_model=models.UserPublic, summary="Get current user")
-def get_user(current_user: CurrentUser) -> Any:
+@router.get("/me", response_model=UserPublic, summary="Get current user")
+async def get_user(current_user: CurrentUser) -> Any:
     """
     Get current user.
     """    
     return current_user
 
 
-@router.patch("/me/password", response_model=models.Message, summary="Update user password")
+@router.patch("/me/password", response_model=Message, summary="Update user password")
 async def update_user_password(
-    *, session: SessionDep, body: models.UpdatePassword, current_user: CurrentUser
+    *, session: SessionDep, body: UpdatePassword, current_user: CurrentUser
 ) -> Any:
     """
     Update user password.
@@ -107,10 +120,10 @@ async def update_user_password(
     current_user.hashed_password = hashed_password
     session.add(current_user)
     await session.commit()
-    return models.Message(message="Password updated successfully")
+    return Message(message="Password updated successfully")
 
 
-@router.delete("/me", response_model=models.Message, summary="Delete own user")
+@router.delete("/me", response_model=Message, summary="Delete own user")
 async def delete_user(session: SessionDep, current_user: CurrentUser) -> Any:
     """
     Delete own user.
@@ -119,21 +132,21 @@ async def delete_user(session: SessionDep, current_user: CurrentUser) -> Any:
         raise HTTPException(
             status_code=403, detail="Super users are not allowed to delete themselves"
         )
-    statement = delete(models.Post).where(col(models.Post.owner_id) == current_user.id)
+    statement = delete(Post).where(col(Post.owner_id) == current_user.id)
     await session.exec(statement)  
     await session.delete(current_user)
     await session.commit()
-    return models.Message(message="User deleted successfully")
+    return Message(message="User deleted successfully")
 
 
-@router.get("/{user_id}", response_model=models.UserPublic)
+@router.get("/{user_id}", response_model=UserPublic)
 async def read_user_by_id(
     user_id: uuid.UUID, session: SessionDep, current_user: CurrentUser
 ) -> Any:
     """
     Get a user by id.
     """
-    user = await session.get(models.User, user_id)
+    user = await session.get(User, user_id)
     if user == current_user:
         return user
     if not current_user.is_superuser:
@@ -147,19 +160,19 @@ async def read_user_by_id(
 @router.patch(
     "/{user_id}",
     dependencies=[Depends(get_current_active_superuser)],
-    response_model=models.UserPublic,
+    response_model=UserPublic,
     summary="Update a user"
 )
 async def update_user(
     *,
     session: SessionDep,
     user_id: uuid.UUID,
-    user_in: models.UserUpdate,
+    user_in: UserUpdate,
 ) -> Any:
     """
     Update a user.
     """
-    current_user = await session.get(models.User, user_id)
+    current_user = await session.get(User, user_id)
     if not current_user:
         raise HTTPException(
             status_code=404,
@@ -179,25 +192,25 @@ async def update_user(
 @router.delete("/{user_id}", dependencies=[Depends(get_current_active_superuser)])
 async def delete_user(
     session: SessionDep, current_user: CurrentUser, user_id: uuid.UUID
-) -> models.Message:
+) -> Message:
     """
     Delete a user by id.
     """
-    user = await session.get(models.User, user_id)
+    user = await session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     if user == current_user:
         raise HTTPException(
             status_code=403, detail="Super users are not allowed to delete themselves"
         )
-    statement = delete(models.Post).where(col(models.Post.owner_id) == user_id)
+    statement = delete(Post).where(col(Post.owner_id) == user_id)
     await session.exec(statement) 
     await session.delete(user)
     await session.commit()
-    return models.Message(message="User deleted successfully")
+    return Message(message="User deleted successfully")
 
 
-# @router.post("/avatar", response_model=models.Message, summary="Create user avatar") 
+# @router.post("/avatar", response_model=Message, summary="Create user avatar") 
 # async def create_avatar(background_tasks: BackgroundTasks, session: SessionDep, current_user: CurrentUser, file:UploadFile = File(...)):
 #     """
 #     Create user avatar.
@@ -205,4 +218,4 @@ async def delete_user(
 #     image = Image.open(file.file)
 #     image.thumbnail(settings.AVATAR_SIZE)
 #     image.save(settings.FILE_PATH + "/" + current_user.email + "_" + "settings.TIMESTAMP" + "." + image.format)
-#     return models.Message(message="File saved successfully")
+#     return Message(message="File saved successfully")

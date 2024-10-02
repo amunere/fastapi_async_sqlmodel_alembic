@@ -59,7 +59,7 @@ class Settings(BaseSettings):
                     path=info.data["DATABASE_NAME"],
                 )
         return v
-
+    
     FIRST_SUPERUSER_EMAIL: EmailStr
     FIRST_SUPERUSER_PASSWORD: str
 

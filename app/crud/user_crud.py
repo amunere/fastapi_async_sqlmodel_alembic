@@ -2,10 +2,14 @@ from typing import Any
 from sqlmodel import Session, select
 
 from app.core.security import get_password_hash, verify_password
-from app.models import User, UserCreate, UserUpdate, Post
+from app.models.role_model import Role
+from app.models.user_model import User
+from app.schemas.user_schema import UserCreate, UserUpdate
+from app.schemas.role_schema import RoleCreate
 
 
-async def create_user(*, session, user_create: UserCreate) -> User:
+async def create_user(*, session: Session, user_create: UserCreate) -> User:
+    print(f"GFJGEKJFKEJFKJ {user_create}")
     db_obj = User.model_validate(
         user_create, update={"hashed_password": get_password_hash(user_create.password)}
     )
@@ -28,9 +32,9 @@ async def update_user(*, session: Session, current_user: User, user_in: UserUpda
     return current_user
 
 
-async def get_user_by_email(*, session: Session, email: str) -> User | None:    
+async def get_user_by_email(*, session: Session, email: str) -> User | None:  
     statement = select(User).where(User.email == email)
-    session_user = await session.scalar(statement)
+    session_user = await session.scalar(statement=statement)
     return session_user
 
 
@@ -43,6 +47,18 @@ async def authenticate(*, session: Session, email: str, password: str) -> User |
     return db_user
 
 
+async def get_role(*, session: Session, role: str) -> Role | None:  
+    statement = select(Role).where(Role.name == role)
+    session_role = await session.scalar(statement=statement)
+    return session_role
+
+async def create_user_role(*, session, role_in: RoleCreate) -> Role:
+    db_obj = Role.model_validate(role_in)
+    session.add(db_obj)
+    await session.commit()
+    return db_obj
+
+
 # def create_item(*, session: Session, item_in: ItemCreate, owner_id: uuid.UUID) -> Item:
 #     db_item = Item.model_validate(item_in, update={"owner_id": owner_id})
 #     session.add(db_item)
@@ -50,8 +66,3 @@ async def authenticate(*, session: Session, email: str, password: str) -> User |
 #     session.refresh(db_item)
 #     return db_item
 
-
-async def get_post_by_title(*, session: Session, title: str) -> Post | None:    
-    statement = select(Post).where(Post.title == title)
-    session_post = await session.scalar(statement)
-    return session_post

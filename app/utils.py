@@ -5,10 +5,8 @@ from pathlib import Path
 from typing import Any
 
 import emails  # type: ignore
-from fastapi.responses import JSONResponse
 import jwt
 from jinja2 import Template
-from fastapi import HTTPException
 from jwt.exceptions import InvalidTokenError
 from PIL import Image 
 

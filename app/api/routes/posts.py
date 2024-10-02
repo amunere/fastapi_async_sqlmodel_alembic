@@ -2,16 +2,17 @@ import uuid
 from typing import Annotated, Any
 from slugify import slugify
 
-from fastapi.responses import JSONResponse
-from app import crud
-from app.core.config import settings
+from app.crud.post_crud import get_post_by_title
 
 from fastapi import APIRouter, Form, HTTPException, UploadFile
 from sqlmodel import func, select
 
 from app.api.deps import CurrentUser, SessionDep
 from app.utils import thumbnail_post_image
-from app.models import ImageCreate, ImagePublic, Post, PostCreate, PostPublic, PostsPublic, PostUpdate, Message, Image
+from app.models.post_model import Post
+from app.models.post_image_model import Image
+from app.schemas.post_schema import PostsPublic, PostPublic, PostUpdate
+from app.schemas.common_schema import Message
 
 router = APIRouter()
 
@@ -72,7 +73,7 @@ async def create_post(
     Create new post.
     """
     
-    db_post = await crud.get_post_by_title(session=session, title=title)
+    db_post = await get_post_by_title(session=session, title=title)
     if db_post:
         raise HTTPException(status_code=400, detail="This title is already in use.")
     
@@ -111,6 +112,11 @@ async def update_post(
         raise HTTPException(status_code=404, detail="Post not found")
     if not current_user.is_superuser and (post.owner_id != current_user.id):
         raise HTTPException(status_code=400, detail="Not enough permissions")
+    if post.title == post_in.title:
+        raise HTTPException(status_code=400, detail="This title is already in use.")
+    db_post = await get_post_by_title(session=session, title=post_in.title)
+    if db_post:
+        raise HTTPException(status_code=400, detail="This title is already in use.")
     update_dict = post_in.model_dump(exclude_unset=True)
     post.sqlmodel_update(update_dict)
     session.add(post)
