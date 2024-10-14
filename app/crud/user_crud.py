@@ -9,9 +9,13 @@ from app.schemas.role_schema import RoleCreate
 
 
 async def create_user(*, session: Session, user_create: UserCreate) -> User:
-    print(f"GFJGEKJFKEJFKJ {user_create}")
+    db_role = await get_role(session=session, role="user")
     db_obj = User.model_validate(
-        user_create, update={"hashed_password": get_password_hash(user_create.password)}
+        user_create, 
+        update={
+            "hashed_password": get_password_hash(user_create.password),
+            "role_id": db_role.id
+        }
     )
     session.add(db_obj)
     await session.commit()
@@ -47,9 +51,9 @@ async def authenticate(*, session: Session, email: str, password: str) -> User |
     return db_user
 
 
-async def get_role(*, session: Session, role: str) -> Role | None:  
+async def get_role(*, session: Session, role: str) -> Role | None:
     statement = select(Role).where(Role.name == role)
-    session_role = await session.scalar(statement=statement)
+    session_role = await session.exec(statement=statement)
     return session_role
 
 async def create_user_role(*, session, role_in: RoleCreate) -> Role:

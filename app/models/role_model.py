@@ -1,4 +1,3 @@
-import uuid
 from sqlalchemy import Column, String
 from sqlmodel import Field, SQLModel, Relationship
 from app.models.base_uuid_model import BaseUUIDModel
@@ -11,4 +10,4 @@ class RoleBase(SQLModel):
 
 class Role(BaseUUIDModel, RoleBase, table=True): 
     __tablename__ = 'roles'
-    users: list["User"] = Relationship(back_populates="role") # type: ignore
+    users: list["User"] = Relationship(back_populates="role", sa_relationship_kwargs={'lazy': 'selectin'}) # type: ignore

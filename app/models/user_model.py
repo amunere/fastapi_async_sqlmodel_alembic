@@ -21,7 +21,6 @@ class UserBase(SQLModel):
     email: EmailStr = Field(sa_column=Column(String, index=True, unique=True))
     is_active: bool = True
     is_superuser: bool = False
-    role_id: uuid.UUID #| None = Field(default=None, foreign_key="roles.id") #todo ref!!
     gender: Gender = Gender.other
     state: str | None = None
     country: str | None = None

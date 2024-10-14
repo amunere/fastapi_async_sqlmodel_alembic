@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     DATABASE_CELERY_NAME: str = "celery_schedule_jobs"
     ASYNC_DATABASE_URI: PostgresDsn | str = ""
     DATETIME: str = datetime.utcnow().strftime("%m-%d-%Y, %H:%M:%S")
-    DATESTAMP: str = datetime.utcnow().strftime("%m-%d-%Y")
+    DATESTAMP: str = datetime.utcnow().strftime("%m-%d-%Y_%H:%M:%S")
     UPLOAD_PATH: str
     IMAGE_SIZE: list = [280, 280]
 

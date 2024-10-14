@@ -122,8 +122,8 @@ def thumbnail_post_image(file, email: str):
     try:
         img = Image.open(file.file)
     except:
-        return None        
+        return None   
     img.thumbnail(settings.IMAGE_SIZE)
-    fp = settings.UPLOAD_PATH + "/" + email + "_" + settings.DATESTAMP + "." + img.format
-    img.save(fp)
-    return fp
+    file_path = settings.UPLOAD_PATH + "/" + email + "_" + settings.DATESTAMP + "." + img.format
+    img.save(file_path)
+    return file_path

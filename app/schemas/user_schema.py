@@ -23,7 +23,6 @@ class GroupRead(GroupBase):
 
 class UserPublic(UserBase):
     id: uuid.UUID
-    role: RoleRead
     
 
 

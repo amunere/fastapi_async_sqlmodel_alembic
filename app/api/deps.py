@@ -21,6 +21,7 @@ async def get_async_session():
    async with AsyncSessionLocal() as session:
         async with session.begin():
             yield session
+            session.expunge_all()
 
 
 SessionDep = Annotated[AsyncSession, Depends(get_async_session)]

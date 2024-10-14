@@ -1,16 +1,14 @@
 import uuid
 from typing import Annotated, Any
-from slugify import slugify
 
-from app.crud.post_crud import get_post_by_title
+from app.crud.post_crud import get_post_by_title, post_create
 
 from fastapi import APIRouter, Form, HTTPException, UploadFile
 from sqlmodel import func, select
 
 from app.api.deps import CurrentUser, SessionDep
-from app.utils import thumbnail_post_image
 from app.models.post_model import Post
-from app.models.post_image_model import Image
+from app.models.tag_model import Tag
 from app.schemas.post_schema import PostsPublic, PostPublic, PostUpdate
 from app.schemas.common_schema import Message
 
@@ -67,6 +65,7 @@ async def create_post(
     current_user: CurrentUser, 
     title: Annotated[str, Form()], 
     description: Annotated[str, Form()],
+    tags: Annotated[list[str], Form()],
     file: UploadFile
 ) -> Any:
     """
@@ -77,21 +76,14 @@ async def create_post(
     if db_post:
         raise HTTPException(status_code=400, detail="This title is already in use.")
     
-    post = Post(
-        title=title, 
-        description=description, 
-        owner_id=current_user.id, 
-        slug=slugify(title, allow_unicode=True, separator="_"))       
-    
-    fp = thumbnail_post_image(file=file, email=current_user.email)
-    if fp:
-        image = Image(filename=fp, post_id=post.id)        
-    else:
-        raise HTTPException(status_code=400, detail="Uploaded file is not a valid image")
-        
-    session.add(image)
-    session.add(post)
-    await session.commit()
+    post = await post_create(
+        session=session, 
+        current_user=current_user, 
+        title=title,
+        description=description,
+        tags=tags,        
+        file=file       
+    )
 
     return post
 
@@ -140,3 +132,10 @@ async def delete_post(
     await session.delete(post)
     await session.commit()
     return Message(message="Post deleted successfully")
+
+
+@router.get("/tag/{tag}")
+async def get_post_by_tag(session: SessionDep, current_user: CurrentUser, tag: str) -> Any:
+    statement = select(Tag).where(Tag.name == tag)
+    posts = await session.scalars(statement)
+    return posts
