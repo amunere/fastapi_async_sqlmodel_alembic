@@ -37,6 +37,6 @@ if settings.BACKEND_CORS_ORIGINS:
         allow_headers=["*"],
     )
 
-app.mount("/upload", StaticFiles(directory="upload"), name="upload")
+app.mount("/upload", StaticFiles(directory="upload", html=True), name="upload")
 
 app.include_router(api_router, prefix=settings.API_V1_STR)

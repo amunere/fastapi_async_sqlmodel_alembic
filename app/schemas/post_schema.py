@@ -4,6 +4,7 @@ from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy import Column, String
 from sqlmodel import Field, SQLModel
 from app.models.post_model import PostBase
+from app.schemas.post_image_schema import ImagePublic
 
 
 class PostCreate(PostBase):
@@ -21,6 +22,7 @@ class PostUpdate(PostBase):
 class PostPublic(PostBase):
     id: uuid.UUID
     author_id: uuid.UUID
+    images: list[ImagePublic]
 
 
 class PostsPublic(SQLModel):
