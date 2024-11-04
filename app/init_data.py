@@ -17,13 +17,18 @@ async def init_db():
             print('Create superuser') #todo set log
             user_in = UserCreate(
                 nickname=settings.FIRST_SUPERUSER_NICKNAME,
+                first_name=settings.FIRST_SUPERUSER_FNAME,
+                last_name=settings.FIRST_SUPERUSER_LNAME,
                 email=settings.FIRST_SUPERUSER_EMAIL,
-                password=settings.FIRST_SUPERUSER_PASSWORD,
-                is_superuser=True,
-                is_active=True,
+                password=settings.FIRST_SUPERUSER_PASSWORD                
             )
             user = User.model_validate(
-                user_in, update={"hashed_password": get_password_hash(user_in.password)}
+                user_in, 
+                update={
+                    "hashed_password": get_password_hash(user_in.password), 
+                    'is_active': True, 
+                    'is_superuser': True
+                }
             )
             session.add(user)
 
