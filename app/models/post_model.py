@@ -10,6 +10,7 @@ from app.models.tag_model import Tag
 class PostBase(SQLModel):
     title: str = Field(min_length=1, max_length=255, unique=True)  
     description: str | None = Field(default=None, max_length=255)
+    
 
 
 # Database model, database table inferred from class name
@@ -22,7 +23,7 @@ class Post(BaseUUIDModel, PostBase, table=True):
     )
     author: list["User"] | None = Relationship(back_populates="posts", sa_relationship_kwargs={'lazy': 'selectin'})     # type: ignore
     slug: str = Field(min_length=10, max_length=255)
-    images: list["Image"] = Relationship(back_populates="post", cascade_delete=True, sa_relationship_kwargs={'lazy': 'selectin'}) # type: ignore 
-    # tags: list[str] = Field(default=None, sa_column=Column(ARRAY(String()))) 
+    poster: str | None
     tags: list[Tag] = Relationship(back_populates="post", cascade_delete=True, sa_relationship_kwargs={'lazy': 'selectin'}) 
+    status: bool = Field(default=False)
     

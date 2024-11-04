@@ -14,7 +14,7 @@ from app.core.config import settings
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("enter lifespan")
-    # await init_db()
+    await init_db()
     yield
     print("exit lifespan")
     

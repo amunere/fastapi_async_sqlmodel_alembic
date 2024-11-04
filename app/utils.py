@@ -127,3 +127,8 @@ def thumbnail_post_image(file, email: str):
     file_path = settings.UPLOAD_PATH + "/" + email + "_" + settings.DATESTAMP + "." + img.format
     img.save(file_path)
     return file_path
+
+
+# Remove all spaces
+def remove_all_spaces(string):
+    return " ".join(string.split())

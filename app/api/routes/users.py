@@ -19,7 +19,8 @@ from app.schemas.user_schema import (
     UserUpdateSelf,
     UsersPublic, 
     UpdatePassword,
-    UserUpdate
+    UserUpdate,
+    RoleRead
 )
 from app.schemas.common_schema import Message
 
@@ -46,16 +47,17 @@ async def create_user(background_tasks: BackgroundTasks, user_in: UserCreate, se
     if db_user:
         raise HTTPException(status_code=400, detail="Invalid user credentials")
     user = await crud.create_user(session=session, user_create=user_in)
-    if settings.EMAILS_ENABLED and user_in.email:
-        email_data = generate_new_account_email(
-            email_to=user_in.email, username=user_in.email, password=user_in.password
-        )
-        background_tasks.add_task(
-            send_email, 
-            email_to=user_in.email, 
-            subject=email_data.subject, 
-            html_content=email_data.html_content
-        )
+    print(f'USEEEER SUCCESS CREATE')
+    # if settings.EMAILS_ENABLED and user_in.email:
+    #     email_data = generate_new_account_email(
+    #         email_to=user_in.email, username=user_in.email, password=user_in.password
+    #     )
+    #     background_tasks.add_task(
+    #         send_email, 
+    #         email_to=user_in.email, 
+    #         subject=email_data.subject, 
+    #         html_content=email_data.html_content
+    #     )
     return user
 
 
@@ -64,12 +66,12 @@ async def update_user(*, session: SessionDep, user_in: UserUpdateSelf, current_u
     """
     Update own user.
     """     
-    if user_in.email:
-        existing_user = await crud.get_user_by_email(session=session, email=user_in.email)
-        if existing_user and existing_user.id != current_user.id:
-            raise HTTPException(
-                status_code=409, detail="User with this email already exists"
-            )
+    # if user_in.email:
+    #     existing_user = await crud.get_user_by_email(session=session, email=user_in.email)
+    #     if existing_user and existing_user.id != current_user.id:
+    #         raise HTTPException(
+    #             status_code=409, detail="User with this email already exists"
+    #         )
         
     user = await crud.update_user(session=session, current_user=current_user, user_in=user_in)
     return user
@@ -157,6 +159,24 @@ async def read_user_by_id(
     return user
 
 
+@router.get("/{nickname}", response_model=UserPublic)
+async def read_user_by_id(
+    nickname: str, session: SessionDep, current_user: CurrentUser
+) -> Any:
+    """
+    Get a user by nickname.
+    """
+    user = await session.get(User, nickname)
+    if user == current_user:
+        return user
+    if not current_user.is_superuser:
+        raise HTTPException(
+            status_code=403,
+            detail="The user doesn't have enough privileges",
+        )
+    return user
+
+
 @router.patch(
     "/{user_id}",
     dependencies=[Depends(get_current_active_superuser)],
@@ -208,6 +228,12 @@ async def delete_user(
     await session.delete(user)
     await session.commit()
     return Message(message="User deleted successfully")
+
+
+
+
+
+
 
 
 # @router.post("/avatar", response_model=Message, summary="Create user avatar") 

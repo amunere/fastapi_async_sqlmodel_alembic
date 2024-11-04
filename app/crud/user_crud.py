@@ -42,6 +42,12 @@ async def get_user_by_email(*, session: Session, email: str) -> User | None:
     return session_user
 
 
+async def get_user_by_nickname(*, session: Session, nickname: str) -> User | None:  
+    statement = select(User).where(User.nickname == nickname)
+    session_user = await session.scalar(statement=statement)
+    return session_user
+
+
 async def authenticate(*, session: Session, email: str, password: str) -> User | None:
     db_user = await get_user_by_email(session=session, email=email)
     if not db_user:
@@ -53,7 +59,7 @@ async def authenticate(*, session: Session, email: str, password: str) -> User |
 
 async def get_role(*, session: Session, role: str) -> Role | None:
     statement = select(Role).where(Role.name == role)
-    session_role = await session.exec(statement=statement)
+    session_role = await session.scalar(statement=statement)
     return session_role
 
 async def create_user_role(*, session, role_in: RoleCreate) -> Role:

@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     DATETIME: str = datetime.utcnow().strftime("%m-%d-%Y, %H:%M:%S")
     DATESTAMP: str = datetime.utcnow().strftime("%m-%d-%Y_%H:%M:%S")
     UPLOAD_PATH: str
-    IMAGE_SIZE: list = [280, 280]
+    IMAGE_SIZE: list = [1200, 630]
 
     EMAIL_USERNAME: str
     EMAIL_PASSWORD: str
@@ -60,6 +60,7 @@ class Settings(BaseSettings):
                 )
         return v
     
+    FIRST_SUPERUSER_NICKNAME: str
     FIRST_SUPERUSER_EMAIL: EmailStr
     FIRST_SUPERUSER_PASSWORD: str
 

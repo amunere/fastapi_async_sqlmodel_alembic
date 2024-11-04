@@ -11,27 +11,26 @@ from app.models.user_model import User
 
 async def init_db():
     async with AsyncSessionLocal() as session:
-            db_role = await get_role(session=session, role=RoleEnum.admin)
-            if not db_role:
-                for role in RoleEnum:
-                    role_in = RoleCreate(
-                        name=role.name,
-                        description=f"Role for {role.name}"
-                    )
-                    await create_user_role(session=session, role_in=role_in)
+        statement = select(User).where(User.email == settings.FIRST_SUPERUSER_EMAIL)
+        user = await session.scalar(statement=statement)
+        if not user:
+            print('Create superuser') #todo set log
+            user_in = UserCreate(
+                nickname=settings.FIRST_SUPERUSER_NICKNAME,
+                email=settings.FIRST_SUPERUSER_EMAIL,
+                password=settings.FIRST_SUPERUSER_PASSWORD,
+                is_superuser=True,
+                is_active=True,
+            )
+            user = User.model_validate(
+                user_in, update={"hashed_password": get_password_hash(user_in.password)}
+            )
+            session.add(user)
 
-            statement = select(User).where(User.email == settings.FIRST_SUPERUSER_EMAIL)
-            user = await session.scalar(statement=statement)
-            if not user:
-                user_in = UserCreate(
-                    email=settings.FIRST_SUPERUSER_EMAIL,
-                    password=settings.FIRST_SUPERUSER_PASSWORD,
-                    is_superuser=True,
-                    is_active=True,
-                    role_id=db_role.id
-                )
-                db_obj = User.model_validate(
-                    user_in, update={"hashed_password": get_password_hash(user_in.password)}
-                )
-                session.add(db_obj)
-                await session.commit() 
+            #Set admin role
+            admin_role = RoleEnum.admin
+            role = Role(name=admin_role, description=f"Role for {admin_role.name}", user_id=user.id)
+            session.add(role)
+            await session.commit()
+        
+            
