@@ -63,6 +63,8 @@ class Settings(BaseSettings):
     FIRST_SUPERUSER_NICKNAME: str
     FIRST_SUPERUSER_EMAIL: EmailStr
     FIRST_SUPERUSER_PASSWORD: str
+    FIRST_SUPERUSER_FNAME: str
+    FIRST_SUPERUSER_LNAME: str
 
 
     SECRET_KEY: str = secrets.token_urlsafe(32)
