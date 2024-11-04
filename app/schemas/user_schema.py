@@ -2,7 +2,6 @@ from pydantic import EmailStr
 from sqlmodel import Field, SQLModel
 from app.models.tag_model import Tag
 from app.models.user_model import UserBase
-from app.models.group_model import GroupBase
 import uuid
 from enum import Enum
 from .role_schema import RoleRead
@@ -18,11 +17,6 @@ class UserUpdate(UserBase):
     first_name: str | None = Field(default=None, max_length=255)
     last_name: str | None = Field(default=None, max_length=255)
     role_id: uuid.UUID
-
-
-# This schema is used to avoid circular import
-class GroupRead(GroupBase):
-    id: uuid.UUID
 
 
 class UserPublic(UserBase):

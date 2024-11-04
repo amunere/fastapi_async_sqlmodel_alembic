@@ -1,7 +1,4 @@
-from typing import Optional, Set
 import uuid
-from sqlalchemy.dialects.postgresql import ARRAY
-from sqlalchemy import Column, String
 from sqlmodel import Field, Relationship, SQLModel
 from app.models.base_uuid_model import BaseUUIDModel
 from app.models.tag_model import Tag

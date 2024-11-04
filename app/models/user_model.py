@@ -25,7 +25,7 @@ class UserBase(SQLModel):
 
 # Database model, database table inferred from class name
 class User(BaseUUIDModel, UserBase, table=True):    
-    is_active: bool = False
+    is_active: bool
     is_superuser: bool = False
     gender: Gender = Gender.other
     city: str | None = None
@@ -36,8 +36,7 @@ class User(BaseUUIDModel, UserBase, table=True):
     phone: str | None = None
     hashed_password: str
     posts: list["Post"] = Relationship(back_populates="author", cascade_delete=True) # type: ignore
-    roles: list["Role"] = Relationship(back_populates="user", sa_relationship_kwargs={'lazy': 'selectin'}) # type: ignore
-    groups: list["Group"] = Relationship(back_populates="creater", cascade_delete=True) # type: ignore
+    roles: list["Role"] = Relationship(back_populates="user", cascade_delete=True, sa_relationship_kwargs={'lazy': 'selectin'}) # type: ignore
     gender: str
 
     def __str__(self):
